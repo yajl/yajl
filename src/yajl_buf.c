@@ -21,6 +21,7 @@
 #include <string.h>
 
 #define YAJL_BUF_INIT_SIZE 2048
+#define YAJL_BUF_GROWTH_FACTOR 1.5
 
 struct yajl_buf_t {
     size_t len;
@@ -32,22 +33,18 @@ struct yajl_buf_t {
 static
 void yajl_buf_ensure_available(yajl_buf buf, size_t want)
 {
-    size_t need;
-    
     assert(buf != NULL);
 
     /* first call */
     if (buf->data == NULL) {
-        buf->len = YAJL_BUF_INIT_SIZE;
+        buf->len = want * YAJL_BUF_GROWTH_FACTOR;
         buf->data = (unsigned char *) YA_MALLOC(buf->alloc, buf->len);
         buf->data[0] = 0;
     }
 
-    need = buf->len;
+    if ((buf->len - buf->used) < want) {
+        size_t need = (buf->used + want) * YAJL_BUF_GROWTH_FACTOR;
 
-    while (want >= (need - buf->used)) need <<= 1;
-
-    if (need != buf->len) {
         buf->data = (unsigned char *) YA_REALLOC(buf->alloc, buf->data, need);
         buf->len = need;
     }
